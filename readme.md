@@ -17,7 +17,8 @@ module.exports = {
 }
 ```
 
-**Note:** Windows support needs a full path in your prompot. Bash for windows only supports resolvable directories (`/mnt/...`).
+**Note:** Windows support needs a full path in your prompt. 
+Bash for windows only supports resolvable directories (`/mnt/...`).
 
 
 ## Config
