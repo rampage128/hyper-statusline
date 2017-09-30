@@ -78,7 +78,7 @@ module.exports = {
   config: {
     ...
       hyperStatusLine: {
-        gitCommand: 'c:\\Program Files\Git\bin\git.exe',
+        gitCommand: '"c:\\Program Files\\Git\\bin\\git.exe"',
       }
     ...
   }
