@@ -17,7 +17,7 @@ module.exports = {
 }
 ```
 
-**Note:** Currently doesn't support Windows.
+**Note:** Windows support needs a full path in your prompot. Bash for windows only supports resolvable directories (`/mnt/...`).
 
 
 ## Config
@@ -69,6 +69,20 @@ module.exports = {
 }
 ```
 
+### Set custom git command
+Default value is `git.exe` (for windows) or `git` (for others)
+
+```javascript
+module.exports = {
+  config: {
+    ...
+      hyperStatusLine: {
+        gitCommand: 'c:\\Program Files\Git\bin\git.exe',
+      }
+    ...
+  }
+}
+```
 
 ## Theme
 
