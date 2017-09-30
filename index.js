@@ -6,7 +6,7 @@ const path = require('path');
 const afterAll = require('after-all-results');
 const tildify = require('tildify');
 
-const gitCommand = '"C:\\Program Files\\Git\\bin\\git.exe"';
+let gitCommand = process.platform === 'win32' ? 'git.exe' : 'git';
 
 exports.decorateConfig = (config) => {
     const colorForeground = color(config.foregroundColor);
@@ -36,16 +36,11 @@ exports.decorateConfig = (config) => {
     }, config.colors);
 
     const hyperStatusLine = Object.assign({
-		//gitCommand: (process.platform === 'win32' ? '"C:\\Program Files\\Git\\bin\\git.exe"' : 'git'),
         footerTransparent: true,
         dirtyColor: configColors.lightYellow,
         aheadColor: configColors.blue
     }, config.hyperStatusLine);
 
-	//console.log(hyperStatusLine);
-
-	//gitCommand = hyperStatusLine.gitCommand;
-	
     return Object.assign({}, config, {
         css: `
             ${config.css || ''}
@@ -188,7 +183,7 @@ const isGit = (dir, cb) => {
 }
 
 const gitBranch = (repo, cb) => {
-    exec(`git symbolic-ref --short HEAD || git rev-parse --short HEAD`, { cwd: repo }, (err, stdout) => {
+    exec(`${gitCommand} symbolic-ref --short HEAD || ${gitCommand} rev-parse --short HEAD`, { cwd: repo }, (err, stdout) => {
         if (err) {
             return cb(err);
         }
@@ -198,13 +193,13 @@ const gitBranch = (repo, cb) => {
 }
 
 const gitRemote = (repo, cb) => {
-    exec(`git ls-remote --get-url`, { cwd: repo }, (err, stdout) => {
+    exec(`${gitCommand} ls-remote --get-url`, { cwd: repo }, (err, stdout) => {
         cb(null, stdout.trim().replace(/^git@(.*?):/, 'https://$1/').replace(/[A-z0-9\-]+@/, '').replace(/\.git$/, ''));
     });
 }
 
 const gitDirty = (repo, cb) => {
-    exec(`git status --porcelain --ignore-submodules -uno`, { cwd: repo }, (err, stdout) => {
+    exec(`${gitCommand} status --porcelain --ignore-submodules -uno`, { cwd: repo }, (err, stdout) => {
         if (err) {
             return cb(err);
         }
@@ -214,7 +209,7 @@ const gitDirty = (repo, cb) => {
 }
 
 const gitAhead = (repo, cb) => {
-    exec(`git rev-list --left-only --count HEAD...@'{u}' 2>/dev/null`, { cwd: repo }, (err, stdout) => {
+    exec(`${gitCommand} rev-list --left-only --count HEAD...@'{u}' 2>/dev/null`, { cwd: repo }, (err, stdout) => {
         cb(null, parseInt(stdout, 10));
     });
 }
@@ -370,6 +365,11 @@ exports.middleware = (store) => (next) => (action) => {
             pid = uids[action.uid].pid;
             setCwd(pid, action);
             break;
+			
+		case 'CONFIG_LOAD':
+		case 'CONFIG_RELOAD':
+			gitCommand = action.config.hyperStatusLine ? action.config.hyperStatusLine.gitCommand || gitCommand : gitCommand;
+			break;
     }
 
     next(action);
