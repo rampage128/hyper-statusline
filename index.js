@@ -6,6 +6,8 @@ const path = require('path');
 const afterAll = require('after-all-results');
 const tildify = require('tildify');
 
+const gitCommand = '"C:\\Program Files\\Git\\bin\\git.exe"';
+
 exports.decorateConfig = (config) => {
     const colorForeground = color(config.foregroundColor);
     const colorBackground = color(config.backgroundColor);
@@ -34,11 +36,16 @@ exports.decorateConfig = (config) => {
     }, config.colors);
 
     const hyperStatusLine = Object.assign({
+		//gitCommand: (process.platform === 'win32' ? '"C:\\Program Files\\Git\\bin\\git.exe"' : 'git'),
         footerTransparent: true,
         dirtyColor: configColors.lightYellow,
         aheadColor: configColors.blue
     }, config.hyperStatusLine);
 
+	//console.log(hyperStatusLine);
+
+	//gitCommand = hyperStatusLine.gitCommand;
+	
     return Object.assign({}, config, {
         css: `
             ${config.css || ''}
@@ -148,11 +155,30 @@ let git = {
     ahead: 0
 }
 
-const setCwd = (pid) => {
-    exec(`lsof -p ${pid} | awk '$4=="cwd"' | tr -s ' ' | cut -d ' ' -f9-`, (err, stdout) => {
-        cwd = stdout.trim();
-        setGit(cwd);
-    });
+// For Windows Support:
+// the final excluded character () is an odd character
+// that was added to the end of the line by posh-hg/posh-git
+const directoryRegex = /((\/mnt\/|[a-zA-Z]:)[^\:\[\]\?\"\<\>\|]+)/mi;
+const wslRegex = /\/mnt\/([a-z])/i;
+
+const setCwd = (pid, action) => {
+	if (process.platform === 'win32') {
+		const newCwd = directoryRegex.exec(action.data);
+		if (newCwd) {
+			cwd = newCwd[0].replace(wslRegex, "$1:").replace(/\//g, "\\").trim();
+			setGit(cwd);
+		}
+	}
+	else {
+		exec(`lsof -p ${pid} | awk '$4=="cwd"' | tr -s ' ' | cut -d ' ' -f9-`, (err, newCwd) => {
+			if (err) {
+				console.error(err);
+			} else {
+				cwd = newCwd.trim();
+				setGit(cwd);
+			}
+		});
+	}
 };
 
 const isGit = (dir, cb) => {
@@ -323,7 +349,7 @@ exports.middleware = (store) => (next) => (action) => {
 
         case 'SESSION_ADD':
             pid = action.pid;
-            setCwd(pid);
+            setCwd(pid, action);
             break;
 
         case 'SESSION_ADD_DATA':
@@ -331,13 +357,18 @@ exports.middleware = (store) => (next) => (action) => {
             const enterKey = data.indexOf('\n') > 0;
 
             if (enterKey) {
-                setCwd(pid);
+                setCwd(pid, action);
             }
             break;
 
+		case 'SESSION_PTY_DATA':
+			pid = uids[action.uid].pid;
+			setCwd(pid, action);
+			break;
+			
         case 'SESSION_SET_ACTIVE':
             pid = uids[action.uid].pid;
-            setCwd(pid);
+            setCwd(pid, action);
             break;
     }
 
