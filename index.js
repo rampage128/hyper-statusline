@@ -150,11 +150,8 @@ let git = {
     ahead: 0
 }
 
-// For Windows Support:
-// the final excluded character () is an odd character
-// that was added to the end of the line by posh-hg/posh-git
-const directoryRegex = /((\/mnt\/|[a-zA-Z]:)[^\:\[\]\?\"\<\>\|]+)/mi;
-const wslRegex = /\/mnt\/([a-z])/i;
+const directoryRegex = /((\/mnt\/|[a-zA-Z]:)[^\:\[\]\?\"\<\>\|]+)/mi; // Used for parsing the current prompt (windows support)
+const wslRegex = /\/mnt\/([a-z])/i; // Used for translation of mounted directories in bash for windows
 
 const setCwd = (pid, action) => {
 	if (process.platform === 'win32') {
